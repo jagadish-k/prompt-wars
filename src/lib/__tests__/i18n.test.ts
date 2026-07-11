@@ -10,4 +10,9 @@ describe('i18n', () => {
     await i18n.changeLanguage('en')
     expect(i18n.t('landing.addCity')).toBe('Add a city')
   })
+
+  it('resolves region tags (e.g. hi-IN) to the base language, not en fallback', async () => {
+    await i18n.changeLanguage('hi-IN')
+    expect(i18n.t('landing.addCity')).toBe('शहर जोड़ें')
+  })
 })

@@ -8,6 +8,7 @@ import bn from '../../locales/bn.json'
 i18n.use(initReactI18next).use(LanguageDetector).init({
   fallbackLng: 'en',
   supportedLngs: ['en', 'hi', 'bn'],
+  load: 'languageOnly',
   resources: { en: { translation: en }, hi: { translation: hi }, bn: { translation: bn } },
   detection: { order: ['localStorage', 'navigator'], caches: ['localStorage'] },
   interpolation: { escapeValue: false },
