@@ -19,32 +19,45 @@ export function normalizeWeather(locName: string, alerts: WaAlert[], current: { 
 }
 
 export default async (req: Request): Promise<Response> => {
-  const url = new URL(req.url)
-  const lat = Number(url.searchParams.get('lat'))
-  const lng = Number(url.searchParams.get('lng'))
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return new Response('bad coords', { status: 400 })
+  try {
+    const url = new URL(req.url)
+    // Reject missing/empty params BEFORE Number(): Number(null)===0 would pass
+    // Number.isFinite and silently hit WeatherAPI at (0,0), burning upstream quota.
+    const latStr = url.searchParams.get('lat')
+    const lngStr = url.searchParams.get('lng')
+    if (latStr == null || lngStr == null || latStr === '' || lngStr === '') {
+      return new Response('bad coords', { status: 400 })
+    }
+    const lat = Number(latStr)
+    const lng = Number(lngStr)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return new Response('bad coords', { status: 400 })
 
-  const key = process.env.WEATHER_API_KEY
-  if (!key) return new Response('weather not configured', { status: 503 })
+    const key = process.env.WEATHER_API_KEY
+    if (!key) return new Response('weather not configured', { status: 503 })
 
-  const { getStore } = await import('@netlify/blobs')
-  const store = getStore('weather-cache')
-  const cacheKey = `${lat.toFixed(2)},${lng.toFixed(2)}`
-  const cached = await store.getWithMetadata(cacheKey)
-  if (cached?.data && typeof cached.metadata.ttl === 'string' && Date.now() - Number(cached.metadata.ttl) < 10 * 60 * 1000) {
-    return Response.json(JSON.parse(cached.data))
+    const { getStore } = await import('@netlify/blobs')
+    const store = getStore('weather-cache')
+    const cacheKey = `${lat.toFixed(2)},${lng.toFixed(2)}`
+    const cached = await store.getWithMetadata(cacheKey)
+    if (cached?.data && typeof cached.metadata.ttl === 'string' && Date.now() - Number(cached.metadata.ttl) < 10 * 60 * 1000) {
+      return Response.json(JSON.parse(cached.data))
+    }
+
+    const base = 'https://api.weatherapi.com/v1/forecast.json'
+    const q = `${lat},${lng}`
+    const res = await fetch(`${base}?key=${key}&q=${q}&days=1&alerts=yes`, { headers: { Accept: 'application/json' } })
+    if (!res.ok) return new Response('weather upstream error', { status: 502 })
+    const data = await res.json()
+    const normalized = normalizeWeather(
+      data.location?.name ?? cacheKey,
+      data.alerts?.alert ?? [],
+      { precip_mm: data.current?.precip_mm, condition: { text: data.current?.condition?.text } },
+    )
+    await store.setJSON(cacheKey, normalized, { metadata: { ttl: String(Date.now()) } })
+    return Response.json(normalized)
+  } catch (err) {
+    // Match save-profile.ts / locations.ts / generate-plan.ts: JSON 500, never a raw throw.
+    console.error('weather failed', err)
+    return Response.json({ error: 'internal error' }, { status: 500 })
   }
-
-  const base = 'https://api.weatherapi.com/v1/forecast.json'
-  const q = `${lat},${lng}`
-  const res = await fetch(`${base}?key=${key}&q=${q}&days=1&alerts=yes`, { headers: { Accept: 'application/json' } })
-  if (!res.ok) return new Response('weather upstream error', { status: 502 })
-  const data = await res.json()
-  const normalized = normalizeWeather(
-    data.location?.name ?? cacheKey,
-    data.alerts?.alert ?? [],
-    { precip_mm: data.current?.precip_mm, condition: { text: data.current?.condition?.text } },
-  )
-  await store.setJSON(cacheKey, normalized, { metadata: { ttl: String(Date.now()) } })
-  return Response.json(normalized)
 }
