@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 // Import the exported prompt builder + schema to unit-test the deterministic
 // parts of the AI request. (The Gemini call + DB writes are integration
 // territory — need a live key + DB.)
-import { buildPrompt } from '../../../netlify/functions/generate-plan'
+import { buildPrompt, normalizePlan } from '../../../netlify/functions/generate-plan'
 import { PLAN_SCHEMA } from '../../../netlify/functions/_gemini'
 import type { WeatherData } from '@/lib/types'
 
@@ -62,5 +62,55 @@ describe('PLAN_SCHEMA shape (schema ↔ type alignment)', () => {
     const item = PLAN_SCHEMA.properties.locations.items.properties.immediate.items
     expect(item.required).toEqual(['id', 'label'])
     expect(Object.keys(item.properties).sort()).toEqual(['id', 'label'])
+  })
+})
+
+describe('normalizePlan (AI-output boundary normalizer)', () => {
+  // Gemini omits `done` and may emit non-string id/label despite the schema.
+  // The normalizer must coerce everything into an honest PreparednessPlan.
+  const sampleRaw = {
+    overview: 'Stay safe',
+    locations: [
+      {
+        locationName: 'Mumbai',
+        summary: 'Flood risk',
+        immediate: [{ id: 1, label: 'Move to higher floor' }], // numeric id, no done
+        supplies: [{ id: 'w', label: 42 }], // numeric label, no done
+        evacuation: 'Go west',
+      },
+    ],
+  }
+
+  it('coerces checklist item id/label to strings and sets done:false', () => {
+    const plan = normalizePlan(sampleRaw, '2024-01-01T00:00:00.000Z')
+    const item = plan.locations[0].immediate[0]
+    expect(item.id).toBe('1') // number -> string
+    expect(item.label).toBe('Move to higher floor')
+    expect(item.done).toBe(false) // client-only default added at the boundary
+    const supply = plan.locations[0].supplies[0]
+    expect(supply.id).toBe('w')
+    expect(supply.label).toBe('42') // number -> string
+    expect(supply.done).toBe(false)
+  })
+
+  it('preserves overview and updatedAt', () => {
+    const plan = normalizePlan({ overview: 'x', locations: [] }, '2024-02-02T00:00:00.000Z')
+    expect(plan.overview).toBe('x')
+    expect(plan.updatedAt).toBe('2024-02-02T00:00:00.000Z')
+  })
+
+  it('defaults locations to [] when missing or not an array', () => {
+    expect(normalizePlan({}, 't').locations).toEqual([])
+    expect(normalizePlan({ locations: 'nope' }, 't').locations).toEqual([])
+    expect(normalizePlan({ locations: null }, 't').locations).toEqual([])
+  })
+
+  it('guards missing immediate/supplies arrays per location', () => {
+    const plan = normalizePlan(
+      { overview: 'o', locations: [{ locationName: 'Pune', summary: 's', evacuation: 'e' }] },
+      't',
+    )
+    expect(plan.locations[0].immediate).toEqual([])
+    expect(plan.locations[0].supplies).toEqual([])
   })
 })

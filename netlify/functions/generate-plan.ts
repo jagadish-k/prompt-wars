@@ -4,7 +4,7 @@ import { users, monitoredLocations, vulnerabilities, preparednessPlans } from '.
 import { verifySession } from './auth/_session'
 import { gemini, PLAN_SCHEMA } from './_gemini'
 import { normalizeWeather } from './weather'
-import type { WeatherData } from '../../src/lib/types'
+import type { WeatherData, PreparednessPlan, PlanChecklistItem, LocationPlan } from '../../src/lib/types'
 
 interface PromptUser {
   preferredLanguage: string | null
@@ -13,6 +13,49 @@ interface PromptUser {
 }
 interface PromptVuln {
   type: string
+}
+
+// --- Plan boundary normalizer ------------------------------------------------
+// Gemini's PLAN_SCHEMA intentionally omits `done` (client-only state) and emits
+// `{ id, label }` per checklist item. The parsed JSON flows through `any`, so
+// TypeScript never validates the model ↔ type boundary. `normalizePlan` closes
+// that gap: it coerces the raw model output into an honest `PreparednessPlan`,
+// guaranteeing every checklist item is `{ id: string, label: string, done: false }`
+// and defending against schema-violating output (missing/non-array `locations`).
+// Pure (no I/O) so it is unit-testable. See src/lib/__tests__/generate-plan.test.ts.
+
+function normalizeItem(item: unknown): PlanChecklistItem {
+  const i = (item ?? {}) as { id?: unknown; label?: unknown }
+  return { id: String(i.id ?? ''), label: String(i.label ?? ''), done: false }
+}
+
+function normalizeLocation(loc: unknown): LocationPlan {
+  const l = (loc ?? {}) as {
+    locationName?: unknown
+    summary?: unknown
+    immediate?: unknown
+    supplies?: unknown
+    evacuation?: unknown
+  }
+  const immediate = Array.isArray(l.immediate) ? l.immediate : []
+  const supplies = Array.isArray(l.supplies) ? l.supplies : []
+  return {
+    locationName: String(l.locationName ?? ''),
+    summary: String(l.summary ?? ''),
+    immediate: immediate.map(normalizeItem),
+    supplies: supplies.map(normalizeItem),
+    evacuation: String(l.evacuation ?? ''),
+  }
+}
+
+export function normalizePlan(raw: unknown, updatedAt: string): PreparednessPlan {
+  const plan = (raw ?? {}) as { overview?: unknown; locations?: unknown }
+  const locations = Array.isArray(plan.locations) ? plan.locations : []
+  return {
+    overview: String(plan.overview ?? ''),
+    locations: locations.map(normalizeLocation),
+    updatedAt,
+  }
 }
 
 // Pure prompt builder — exported for unit testing (see src/lib/__tests__/generate-plan.test.ts).
@@ -69,7 +112,10 @@ export default async (req: Request): Promise<Response> => {
 
     const planData = JSON.parse(response.text ?? '{}')
     const updatedAt = new Date().toISOString()
-    const payload = { ...planData, updatedAt }
+    // Normalize the AI output at the boundary so persisted + returned data
+    // honestly matches PreparednessPlan (checklist items get done:false, string
+    // id/label; locations guarded against missing/non-array).
+    const payload: PreparednessPlan = normalizePlan(planData, updatedAt)
 
     // Replace any existing plan for the user (keep at most one current plan).
     await db.delete(preparednessPlans).where(eq(preparednessPlans.userId, session.sub))
