@@ -7,6 +7,7 @@ import type { GeoPoint, WeatherData } from '@/lib/types'
 
 export function WeatherCard({ city, onRemove }: { city: GeoPoint; onRemove: () => void }) {
   const { t } = useTranslation()
+  const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading')
   const [w, setW] = useState<WeatherData | null>(null)
 
   useEffect(() => {
@@ -14,14 +15,17 @@ export function WeatherCard({ city, onRemove }: { city: GeoPoint; onRemove: () =
     api
       .getWeather(city.lat, city.lng)
       .then((data) => {
-        if (active) setW(data)
+        if (active) {
+          setW(data)
+          setStatus('ready')
+        }
       })
       .catch(() => {
-        if (active) setW(null)
+        if (active) setStatus('error')
       })
-    return () => {
-      active = false
-    }
+      return () => {
+        active = false
+      }
   }, [city.lat, city.lng])
 
   const severe = w?.alerts.some((a) => a.severity === 'severe' || a.severity === 'extreme')
@@ -46,13 +50,13 @@ export function WeatherCard({ city, onRemove }: { city: GeoPoint; onRemove: () =
           size="lg"
           aria-label={t('landing.removeCity')}
           onPress={onRemove}
-          className="ml-auto"
+          className="ml-auto min-h-12 min-w-12"
         >
           <X aria-hidden="true" />
         </Button>
       </Card.Header>
       <Card.Content>
-        <p>{w ? `${w.rainfallMm} mm · ${w.forecast}` : t('common.loading')}</p>
+        <p>{status === 'ready' && w ? `${w.rainfallMm} mm · ${w.forecast}` : status === 'error' ? t('common.error') : t('common.loading')}</p>
         <div className="mt-2 blur-sm select-none pointer-events-none" aria-hidden="true">
           {t('landing.loginForPlan')}
         </div>

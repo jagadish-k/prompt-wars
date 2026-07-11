@@ -36,11 +36,11 @@ export function CitySearch() {
       <Input
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        aria-label={t('landing.addCity')}
-        placeholder="Mumbai"
+        aria-label={t('landing.cityNameLabel')}
+        placeholder={t('landing.cityNamePlaceholder')}
         fullWidth
       />
-      <Button type="submit" variant="primary" size="lg">
+      <Button type="submit" variant="primary" size="lg" className="min-h-12 min-w-12">
         {t('landing.addCity')}
       </Button>
     </form>
