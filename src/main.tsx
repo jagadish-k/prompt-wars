@@ -8,14 +8,11 @@ import { ProtectedRoute } from './app/ProtectedRoute'
 import LandingRoute from './routes/LandingRoute'
 import OnboardingRoute from './routes/OnboardingRoute'
 import LocationsRoute from './routes/LocationsRoute'
+import CommandCenterRoute from './routes/CommandCenterRoute'
 import './i18n'
 import './index.css'
 
 const VITE_GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string
-
-// Static placeholder for a route built in a later wave (3G).
-// Defined as an element (not a component) so it doesn't trip react-refresh rules.
-const AppHomePlaceholder = <div className="p-8">App (soon)</div>
 
 // eslint-disable-next-line react-refresh/only-export-components
 function App() {
@@ -33,7 +30,14 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/app" element={<ProtectedRoute>{AppHomePlaceholder}</ProtectedRoute>} />
+      <Route
+        path="/app"
+        element={
+          <ProtectedRoute>
+            <CommandCenterRoute />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/app/locations"
         element={
