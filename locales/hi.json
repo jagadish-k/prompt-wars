@@ -1,0 +1,6 @@
+{
+  "common": { "appName": "मानसून रेडी", "signInGoogle": "Google से साइन इन करें", "loading": "लोड हो रहा है…", "error": "कुछ गलत हुआ" },
+  "landing": { "title": "इस मानसून के लिए तैयार रहें", "subtitle": "अपने स्थानों पर मौसम ट्रैक करें", "addCity": "शहर जोड़ें", "loginForPlan": "अपनी व्यक्तिगत तैयारी योजना के लिए साइन इन करें", "severe": "गंभीर मौसम" },
+  "onboarding": { "title": "अपनी प्रोफ़ाइल सेट करें", "homeLocation": "घर का स्थान", "dwelling": "आपके घर का प्रकार", "household": "परिवार का आकार", "vulnerabilities": "विशेष जरूरतें", "save": "सहेजें और जारी रखें" },
+  "dashboard": { "primaryStatus": "मुख्य स्थिति", "savedZones": "सहेजे गए क्षेत्र", "actionPlan": "कार्रवाई योजना चेकलिस्ट", "generatePlan": "मेरी योजना बनाएं", "addLocation": "स्थान जोड़ें" }
+}

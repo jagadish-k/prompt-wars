@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Routes, Route } from 'react-router-dom'
+import { LanguageProvider } from './i18n/LanguageProvider'
 import './i18n'
 import './index.css'
 
@@ -22,7 +23,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <GoogleOAuthProvider clientId={VITE_GOOGLE_CLIENT_ID}>
       <BrowserRouter>
-        <App />
+        <LanguageProvider>
+          <App />
+        </LanguageProvider>
       </BrowserRouter>
     </GoogleOAuthProvider>
   </StrictMode>,
