@@ -10,7 +10,7 @@
 | Concern | Decision |
 |---|---|
 | Scope | Epics 1–4 (+ Command Center as the plan display surface). E6/E7 deferred. |
-| Auth | Sign in with Google via `@react-oauth/google` → server-side JWT verification (`google-auth-library`) → signed HttpOnly session cookie (revocable via Netlify Blobs). |
+| Auth | Sign in with Google via `@react-oauth/google` → server-side JWT verification (`google-auth-library`) → signed HttpOnly session cookie. **(Deviation accepted 2026-07-11: shipped as pure signed JWTs — no Blob-backed revocation; see §4.)** |
 | Data | Netlify Postgres + Drizzle ORM (relational schema per PRD §3) + Netlify Blobs (weather cache, reserved plan-exports). |
 | Weather | WeatherAPI.com (alerts + rainfall). Server-side only. Blob-cached. |
 | AI | Current Gemini 3.x (`gemini-3.1-pro-preview` for structured plan JSON) via `@google/genai` SDK. (Per gemini-api skill, 2.x/1.5 are legacy; 3.x is current.) Live-feed/chat (E6/E7) not in scope. |
@@ -59,9 +59,11 @@ Stores
 
 1. `GoogleOAuthProvider` wraps the app with `VITE_GOOGLE_CLIENT_ID`.
 2. `<GoogleLogin/>` returns a Google ID-token credential (JWT).
-3. `POST /api/auth/callback` verifies the JWT via `google-auth-library.verifyIdToken`, upserts the `users` row, mints a signed session JWT (`SESSION_SECRET`), stores a revocable session record in Blobs, and sets an HttpOnly + Secure + SameSite=Lax cookie.
+3. `POST /api/auth/callback` verifies the JWT via `google-auth-library.verifyIdToken`, upserts the `users` row, mints a signed session JWT (`SESSION_SECRET`, 7-day TTL), and sets an HttpOnly + Secure + SameSite=Lax cookie.
 4. Protected serverless functions read/verify the cookie to resolve `userId`.
-5. Client: `useAuth()` Zustand store, `<ProtectedRoute/>` guard, `GET /api/auth/me`, `POST /api/auth/logout`.
+5. Client: `useAuth()` Zustand store, `<ProtectedRoute/>` guard, `GET /api/auth/me`, `POST /api/auth/logout` (clears the cookie).
+
+> **Accepted deviation (decided 2026-07-11):** The original design called for revocable sessions via Netlify Blobs (store a session ID on login, check it in `verifySession`, delete on logout). This MVP ships **pure signed JWTs with no server-side revocation**. Rationale: cookie theft is mitigated by HttpOnly + Secure + SameSite=Lax flags; the 7-day TTL bounds exposure; revocation added complexity for marginal MVP benefit. Trade-off: a stolen cookie remains valid until expiry and cannot be revoked early. Revisit if/when active-session management or force-logout becomes a requirement.
 
 ## 5. Netlify Functions Surface
 
@@ -71,7 +73,7 @@ Stores
 | `/api/weather` | Serverless | no | WeatherAPI.com wrapper; validates lat/lng; Blob-cached; returns normalized `{ alerts, rainfall, forecast }`. |
 | `/api/auth/callback` | Serverless | no | Verify Google JWT, upsert user, set session cookie. |
 | `/api/auth/me` | Serverless | yes | Return current profile. |
-| `/api/auth/logout` | Serverless | yes | Revoke session blob, clear cookie. |
+| `/api/auth/logout` | Serverless | yes | Clear session cookie. (No server-side revocation — see §4 deviation.) |
 | `/api/save-profile` | Serverless | yes | Onboarding upsert across users/monitored_locations/vulnerabilities in a transaction. |
 | `/api/locations` | Serverless | yes | CRUD for monitored_locations; max 5 per user; user-scoped. |
 | `/api/generate-plan` | Serverless | yes | Loop monitored_locations → fetch weather (cache) → Gemini pro-tier with `responseSchema` → persist `plan_data` (JSONB). |
