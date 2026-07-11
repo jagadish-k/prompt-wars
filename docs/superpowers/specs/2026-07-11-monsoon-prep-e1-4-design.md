@@ -13,7 +13,7 @@
 | Auth | Sign in with Google via `@react-oauth/google` → server-side JWT verification (`google-auth-library`) → signed HttpOnly session cookie (revocable via Netlify Blobs). |
 | Data | Netlify Postgres + Drizzle ORM (relational schema per PRD §3) + Netlify Blobs (weather cache, reserved plan-exports). |
 | Weather | WeatherAPI.com (alerts + rainfall). Server-side only. Blob-cached. |
-| AI | Latest Gemini 2.x. Pro-tier with `responseSchema` JSON for `/api/generate-plan`. Live-feed/chat (E6/E7) not in scope. |
+| AI | Current Gemini 3.x (`gemini-3.1-pro-preview` for structured plan JSON) via `@google/genai` SDK. (Per gemini-api skill, 2.x/1.5 are legacy; 3.x is current.) Live-feed/chat (E6/E7) not in scope. |
 | UI | HeroUI v3 (installed) + Tailwind v4 via `@tailwindcss/vite`. React Router v6, Zustand, react-i18next (en/hi/bn). |
 
 ### Deliberate deviation from PRD §5 ("Zero Client Ingestion")
@@ -111,7 +111,7 @@ Wave 3 ───[3G AI plan engine + Command Center]     (needs 2F,1B) ◀──
 
 | Task | Wave | Deps | Contract |
 |---|---|---|---|
-| 0.1 Foundation | 0 | — | Deps, Tailwind v4 + HeroUI provider, `@/` alias, router shell, `.env.example`, `netlify.toml`, demo removed. |
+| 0.1 Foundation | 0 | — | Deps, Tailwind v4 + `@import "@heroui/styles"` (no provider needed in v3), `@/` alias, router shell, `.env.example`, `netlify.toml`, demo removed. |
 | 1A i18n | 1 | 0.1 | `useTranslation`, `<LanguageSwitcher/>`, en/hi/bn bundles. |
 | 1B Geo+Weather | 1 | 0.1 | `useUserLocation()`, `GET /api/weather`, edge `/api/geo-fallback`, Blob cache. |
 | 1C Auth+DB | 1 | 0.1 | `<GoogleLogin/>`, `useAuth()`, cookie session, Drizzle schema + migration. |
