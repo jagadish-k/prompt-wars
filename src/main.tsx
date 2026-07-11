@@ -7,15 +7,15 @@ import { useAuthStore } from './stores/auth'
 import { ProtectedRoute } from './app/ProtectedRoute'
 import LandingRoute from './routes/LandingRoute'
 import OnboardingRoute from './routes/OnboardingRoute'
+import LocationsRoute from './routes/LocationsRoute'
 import './i18n'
 import './index.css'
 
 const VITE_GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string
 
-// Static placeholders for routes built in later waves (2F/3G).
-// Defined as elements (not components) so they don't trip react-refresh rules.
+// Static placeholder for a route built in a later wave (3G).
+// Defined as an element (not a component) so it doesn't trip react-refresh rules.
 const AppHomePlaceholder = <div className="p-8">App (soon)</div>
-const LocationsPlaceholder = <div className="p-8">Locations (soon)</div>
 
 // eslint-disable-next-line react-refresh/only-export-components
 function App() {
@@ -36,7 +36,11 @@ function App() {
       <Route path="/app" element={<ProtectedRoute>{AppHomePlaceholder}</ProtectedRoute>} />
       <Route
         path="/app/locations"
-        element={<ProtectedRoute>{LocationsPlaceholder}</ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <LocationsRoute />
+          </ProtectedRoute>
+        }
       />
       <Route path="*" element={<div className="p-8 text-center">404</div>} />
     </Routes>
