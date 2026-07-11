@@ -10,6 +10,15 @@
   function = "geo-fallback"
   path = "/api/geo-fallback"
 
+# Route all serverless function calls (/api/*) to their deployed endpoint
+# (/.netlify/functions/*). MUST come before the SPA catch-all below so API
+# requests are handled by functions instead of being rewritten to index.html.
+# Edge functions (declared above) take precedence at their explicit paths.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
