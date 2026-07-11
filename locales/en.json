@@ -1,6 +1,6 @@
 {
   "common": { "appName": "Monsoon Ready", "signInGoogle": "Sign in with Google", "loading": "Loading…", "error": "Something went wrong" },
-  "landing": { "title": "Stay ready this monsoon", "subtitle": "Track weather across your locations", "addCity": "Add a city", "loginForPlan": "Sign in for your personalized preparedness plan", "severe": "Severe weather" },
+  "landing": { "title": "Stay ready this monsoon", "subtitle": "Track weather across your locations", "addCity": "Add a city", "loginForPlan": "Sign in for your personalized preparedness plan", "severe": "Severe weather", "removeCity": "Remove city" },
   "onboarding": { "title": "Set up your profile", "homeLocation": "Home location", "dwelling": "Your home type", "household": "Household size", "vulnerabilities": "Special needs", "save": "Save and continue" },
   "dashboard": { "primaryStatus": "Primary Status", "savedZones": "Saved Zones", "actionPlan": "Action Plan Checklist", "generatePlan": "Generate my plan", "addLocation": "Add location" }
 }
