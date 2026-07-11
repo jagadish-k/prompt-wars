@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
-import { getDb } from '../../db/client'
-import { users } from '../../db/schema'
+import { getDb } from '../../../db/client'
+import { users } from '../../../db/schema'
 import { verifySession } from './_session'
 
 export default async (req: Request): Promise<Response> => {
