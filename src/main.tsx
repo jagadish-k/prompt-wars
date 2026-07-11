@@ -6,14 +6,14 @@ import { LanguageProvider } from './i18n/LanguageProvider'
 import { useAuthStore } from './stores/auth'
 import { ProtectedRoute } from './app/ProtectedRoute'
 import LandingRoute from './routes/LandingRoute'
+import OnboardingRoute from './routes/OnboardingRoute'
 import './i18n'
 import './index.css'
 
 const VITE_GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string
 
-// Static placeholders for routes built in later waves (2E/2F/3G).
+// Static placeholders for routes built in later waves (2F/3G).
 // Defined as elements (not components) so they don't trip react-refresh rules.
-const OnboardingPlaceholder = <div className="p-8">Onboarding (soon)</div>
 const AppHomePlaceholder = <div className="p-8">App (soon)</div>
 const LocationsPlaceholder = <div className="p-8">Locations (soon)</div>
 
@@ -27,7 +27,11 @@ function App() {
       <Route path="/" element={<LandingRoute />} />
       <Route
         path="/onboarding"
-        element={<ProtectedRoute>{OnboardingPlaceholder}</ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <OnboardingRoute />
+          </ProtectedRoute>
+        }
       />
       <Route path="/app" element={<ProtectedRoute>{AppHomePlaceholder}</ProtectedRoute>} />
       <Route
